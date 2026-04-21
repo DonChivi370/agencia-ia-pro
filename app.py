@@ -65,12 +65,15 @@ if df is not None:
             if st.button("Generar Mensaje"):
                 if tema:
                     with st.spinner("Generando mensaje..."):
-                        model = genai.GenerativeModel('gemini-1.5-flash')
-                        res = model.generate_content(
-                            f"{prompt_maestro}\n\nCliente: {c.to_dict()}\n\nTarea: {tema}"
-                        )
-                    st.success("Sugerencia:")
-                    st.markdown(res.text)
+                        try:
+                            model = genai.GenerativeModel('gemini-2.0-flash')
+                            res = model.generate_content(
+                                f"{prompt_maestro}\n\nCliente: {c.to_dict()}\n\nTarea: {tema}"
+                            )
+                            st.success("Sugerencia:")
+                            st.markdown(res.text)
+                        except Exception as e:
+                            st.error(f"Error Gemini: {type(e).__name__}: {e}")
                 else:
                     st.warning("Escribe qué necesitas antes de generar.")
 else:
