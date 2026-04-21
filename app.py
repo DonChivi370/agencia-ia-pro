@@ -3,32 +3,31 @@ import google.generativeai as genai
 import pandas as pd
 from streamlit_gsheets import GSheetsConnection
 
-# Configuración de página
 st.set_page_config(page_title="Agencia IA Pro", layout="wide")
 
 # 1. Configurar IA
-if "GEMINI_API_KEY" in st.secrets:
+try:
     genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
-else:
-    st.error("Falta la clave GEMINI_API_KEY en los Secrets.")
+except:
+    st.error("Falta la GEMINI_API_KEY en los Secrets.")
 
-# 2. Conexión a Google Sheets (Soporte directo para URL)
+# 2. Conexión a Google Sheets
 conn = st.connection("gsheets", type=GSheetsConnection)
 
 @st.cache_data(ttl=60)
 def cargar_datos():
     try:
-        # Obtenemos la URL de los secrets
-        url_sheet = st.secrets["connections"]["gsheets"]["spreadsheet"]
+        # Intentamos obtener la URL de varias formas por si acaso
+        try:
+            url = st.secrets["connections"]["gsheets"]["spreadsheet"]
+        except:
+            url = st.secrets["spreadsheet"] # Ruta alternativa
         
-        # Leemos las hojas usando la URL directa para evitar el Error 404
-        df_c = conn.read(spreadsheet=url_sheet, worksheet="Clientes", ttl=0)
-        df_p = conn.read(spreadsheet=url_sheet, worksheet="Configuracion", ttl=0)
+        # Lectura directa
+        df_c = conn.read(spreadsheet=url, worksheet="Clientes", ttl=0)
+        df_p = conn.read(spreadsheet=url, worksheet="Configuracion", ttl=0)
         
-        # Limpieza de nombres de columnas
         df_c.columns = df_c.columns.str.strip()
-        
-        # Extraer el Prompt Maestro (Celda B1 de la hoja Configuracion)
         prompt = df_p.iloc[0, 1] 
         return df_c, prompt
     except Exception as e:
@@ -37,13 +36,10 @@ def cargar_datos():
 
 df, prompt_maestro = cargar_datos()
 
-# 3. Interfaz de Usuario
+# 3. Interfaz
 st.title("🚀 Gestión Agencia IA")
 
 if df is not None:
-    st.sidebar.header("Panel de Control")
-    
-    # Buscador de clientes
     cliente_sel = st.sidebar.selectbox(
         "Buscar cliente:", 
         options=df["Nombre_Local"].unique().tolist(),
@@ -52,39 +48,24 @@ if df is not None:
     )
 
     if cliente_sel:
-        # Extraer datos del cliente seleccionado
         c = df[df["Nombre_Local"] == cliente_sel].iloc[0]
-        
         col1, col2 = st.columns([1, 2])
         
         with col1:
             st.subheader("Ficha del Cliente")
             st.info(f"**Dueño:** {c['Dueño']}")
             st.write(f"**Estatus:** {c.get('Estatus', 'Activo')}")
-            st.write(f"**Tipo:** {c.get('Tipo_Cliente', 'Individual')}")
             st.write(f"**Fase:** {c.get('Fase_Protocolo', 'N/A')}")
             
-            if 'Facturas_Pendientes' in c and str(c['Facturas_Pendientes']).lower() == "sí":
-                st.warning("⚠️ Facturas Pendientes")
-
         with col2:
             st.subheader("Asistente de Estrategia")
-            tema = st.text_area("¿Qué necesitas comunicar o resolver?")
+            tema = st.text_area("¿Qué necesitas resolver?")
             
-            if st.button("Generar Mensaje Profesional"):
+            if st.button("Generar Mensaje"):
                 if tema:
                     model = genai.GenerativeModel('gemini-1.5-flash')
-                    # Creamos el contexto completo para Gemini
-                    contexto = f"PROMPT MAESTRO:\n{prompt_maestro}\n\nDATOS DEL CLIENTE:\n{c.to_dict()}\n\nSOLICITUD:\n{tema}"
-                    
-                    with st.spinner("IA analizando protocolo..."):
-                        try:
-                            res = model.generate_content(contexto)
-                            st.success("Mensaje Sugerido:")
-                            st.markdown(res.text)
-                        except Exception as e:
-                            st.error(f"Error de la IA: {e}")
-                else:
-                    st.warning("Por favor, escribe un tema antes de generar.")
+                    ctx = f"PROMPT:\n{prompt_maestro}\n\nCLIENTE:\n{c.to_dict()}\n\nTAREA:\n{tema}"
+                    res = model.generate_content(ctx)
+                    st.markdown(res.text)
 else:
-    st.info("Configura los Secrets para conectar con la base de datos.")
+    st.info("Revisa la configuración de tus Secrets y la URL del Excel.")
