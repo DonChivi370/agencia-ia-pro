@@ -1,20 +1,18 @@
 import streamlit as st
-import google.generativeai as genai
 import pandas as pd
+from groq import Groq
 
 # 1. CONFIGURACIÓN DE PÁGINA
 st.set_page_config(page_title="Agencia IA Pro", layout="wide")
 
 # 2. CONECTAR IA
-if "GEMINI_API_KEY" in st.secrets:
-    genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
 # 3. CARGAR DATOS
 @st.cache_data(ttl=60)
 def cargar_datos():
     try:
         sheet_id = "1I-xZ_0KapMCm6xDEX1GSC5z3L9sw0KPBH58c_HBtt44"
-        
         url_clientes = f"https://docs.google.com/spreadsheets/d/{sheet_id}/gviz/tq?tqx=out:csv&sheet=Clientes"
         url_config = f"https://docs.google.com/spreadsheets/d/{sheet_id}/gviz/tq?tqx=out:csv&sheet=Configuracion"
         
@@ -66,14 +64,18 @@ if df is not None:
                 if tema:
                     with st.spinner("Generando mensaje..."):
                         try:
-                            model = genai.GenerativeModel('gemini-2.0-flash')
-                            res = model.generate_content(
-                                f"{prompt_maestro}\n\nCliente: {c.to_dict()}\n\nTarea: {tema}"
+                            respuesta = client.chat.completions.create(
+                                model="llama-3.3-70b-versatile",
+                                messages=[
+                                    {"role": "system", "content": prompt_maestro},
+                                    {"role": "user", "content": f"Cliente: {c.to_dict()}\n\nTarea: {tema}"}
+                                ],
+                                max_tokens=1024
                             )
                             st.success("Sugerencia:")
-                            st.markdown(res.text)
+                            st.markdown(respuesta.choices[0].message.content)
                         except Exception as e:
-                            st.error(f"Error Gemini: {type(e).__name__}: {e}")
+                            st.error(f"Error IA: {type(e).__name__}: {e}")
                 else:
                     st.warning("Escribe qué necesitas antes de generar.")
 else:
