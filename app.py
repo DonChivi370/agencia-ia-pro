@@ -1,7 +1,6 @@
 import streamlit as st
 import google.generativeai as genai
 import pandas as pd
-from streamlit_gsheets import GSheetsConnection
 
 # 1. CONFIGURACIÓN DE PÁGINA
 st.set_page_config(page_title="Agencia IA Pro", layout="wide")
@@ -14,17 +13,18 @@ if "GEMINI_API_KEY" in st.secrets:
 @st.cache_data(ttl=60)
 def cargar_datos():
     try:
-        conn = st.connection("gsheets", type=GSheetsConnection)
-
-        # Leer clientes
-        df_c = conn.read(worksheet="Clientes", ttl=0, usecols=list(range(7)))
+        sheet_id = "1I-xZ_0KapMCm6xDEX1GSC5z3L9sw0KPBH58c_HBtt44"
+        
+        url_clientes = f"https://docs.google.com/spreadsheets/d/{sheet_id}/gviz/tq?tqx=out:csv&sheet=Clientes"
+        url_config = f"https://docs.google.com/spreadsheets/d/{sheet_id}/gviz/tq?tqx=out:csv&sheet=Configuracion"
+        
+        df_c = pd.read_csv(url_clientes)
+        df_p = pd.read_csv(url_config)
+        
         df_c.columns = df_c.columns.str.strip()
         df_c = df_c.dropna(subset=["Nombre_Local"])
-
-        # Leer configuracion — el prompt está en el HEADER de la columna 1
-        df_p = conn.read(worksheet="Configuracion", ttl=0, header=0)
-        prompt = df_p.columns[1]  # ← FIX CLAVE: el prompt está aquí
-
+        prompt = df_p.columns[1]
+        
         return df_c, prompt
     except Exception as e:
         st.error(f"Error de conexión: {e}")
@@ -64,12 +64,14 @@ if df is not None:
             tema = st.text_area("¿Qué necesitas?")
             if st.button("Generar Mensaje"):
                 if tema:
-                    with st.spinner("Generando..."):
+                    with st.spinner("Generando mensaje..."):
                         model = genai.GenerativeModel('gemini-1.5-flash')
                         res = model.generate_content(
                             f"{prompt_maestro}\n\nCliente: {c.to_dict()}\n\nTarea: {tema}"
                         )
                     st.success("Sugerencia:")
                     st.markdown(res.text)
+                else:
+                    st.warning("Escribe qué necesitas antes de generar.")
 else:
     st.info("Conectando con Google Sheets...")
