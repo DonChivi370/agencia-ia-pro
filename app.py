@@ -4,7 +4,7 @@ import pandas as pd
 from streamlit_gsheets import GSheetsConnection
 
 # 1. LLAVE API (Sácala de Google AI Studio)
-genai.configure(api_key=st.secrets["AIzaSyCBG9PgDrlI22tu4iuq7hjY5xisXYy_LSs"])
+genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
 
 # 2. CONEXIÓN AL EXCEL (Lee las dos hojas)
 conn = st.connection("gsheets", type=GSheetsConnection)
