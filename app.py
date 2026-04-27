@@ -45,10 +45,14 @@ def construir_prompt(cliente):
     facturas = normalizar(cliente.get('Facturas_Pendientes', ''))
     contacto = normalizar(cliente.get('Contacto', ''))
     nombre = str(cliente.get('Dueño', '')).strip()
+    acceso = normalizar(cliente.get('Acceso_Ficha', ''))
+    verificada = normalizar(cliente.get('Ficha_Verificada', ''))
 
     es_baja = tipo == "baja"
     tiene_facturas = facturas == "si"
     es_grupo = contacto == "grupo" or normalizar(nombre) in ['', 'nan']
+    tiene_acceso = acceso == "si"
+    esta_verificada = verificada == "si"
 
     instrucciones = []
 
@@ -129,7 +133,45 @@ def construir_prompt(cliente):
                 "- Que no pierda el posicionamiento ganado hasta ahora\n"
             )
 
-    return "\n".join(instrucciones), es_baja, tiene_facturas, es_grupo
+    if not tiene_acceso:
+        if es_grupo:
+            instrucciones.append(
+                "INSTRUCCION OBLIGATORIA - SIN ACCESO A FICHA:\n"
+                "No tenemos acceso a la ficha de Google Business de este cliente.\n"
+                "Al final del mensaje anade una coletilla amable indicando que necesitamos que nos den acceso a su ficha.\n"
+                "Explica de forma sencilla que con acceso podemos optimizarla mejor, mejorar su visibilidad en Google y atraer mas clientes.\n"
+                "Tono: cercano, como un paso importante que depende de ellos para que el servicio funcione al 100%.\n"
+            )
+        else:
+            instrucciones.append(
+                "INSTRUCCION OBLIGATORIA - SIN ACCESO A FICHA:\n"
+                "No tenemos acceso a la ficha de Google Business de este cliente.\n"
+                "Al final del mensaje anade una coletilla amable indicando que necesitamos que nos de acceso a su ficha.\n"
+                "Explica de forma sencilla que con acceso podemos optimizarla mejor, mejorar su visibilidad en Google y atraer mas clientes.\n"
+                "Tono: cercano, como un paso importante que depende de el para que el servicio funcione al 100%.\n"
+            )
+
+    if tiene_acceso and not esta_verificada:
+        if es_grupo:
+            instrucciones.append(
+                "INSTRUCCION OBLIGATORIA - FICHA SIN VERIFICAR:\n"
+                "Tenemos acceso a la ficha pero NO esta verificada en Google.\n"
+                "Al final del mensaje anade una coletilla recordando que hay que pasar el proceso de verificacion.\n"
+                "Explica de forma simple que sin verificacion el negocio no se muestra correctamente en Google,\n"
+                "lo que reduce su visibilidad, su optimizacion y la captacion de nuevos clientes.\n"
+                "Tono: urgente pero tranquilizador, algo que hay que resolver pronto y que nosotros les ayudamos a gestionar.\n"
+            )
+        else:
+            instrucciones.append(
+                "INSTRUCCION OBLIGATORIA - FICHA SIN VERIFICAR:\n"
+                "Tenemos acceso a la ficha pero NO esta verificada en Google.\n"
+                "Al final del mensaje anade una coletilla recordando que hay que pasar el proceso de verificacion.\n"
+                "Explica de forma simple que sin verificacion el negocio no se muestra correctamente en Google,\n"
+                "lo que reduce su visibilidad, su optimizacion y la captacion de nuevos clientes.\n"
+                "Tono: urgente pero tranquilizador, algo que hay que resolver pronto y que nosotros le ayudamos a gestionar.\n"
+            )
+
+    return "\n".join(instrucciones), es_baja, tiene_facturas, es_grupo, tiene_acceso, esta_verificada
 
 
 # 6. INSTRUCCIONES ESPECIFICAS POR TIPO DE MENSAJE RECURRENTE
@@ -261,16 +303,18 @@ if df is not None:
     )
 
     if cliente_sel:
+
+        # Limpiar mensajes al cambiar de cliente
+        if st.session_state.get("cliente_anterior") != cliente_sel:
+            st.session_state["mensaje_libre"] = ""
+            st.session_state["mensaje_recurrente"] = ""
+            st.session_state["cliente_anterior"] = cliente_sel
+
         c = df[df["Nombre_Local"] == cliente_sel].iloc[0]
-        instrucciones_extra, es_baja, tiene_facturas, es_grupo = construir_prompt(c)
+        instrucciones_extra, es_baja, tiene_facturas, es_grupo, tiene_acceso, esta_verificada = construir_prompt(c)
 
         nombre_cliente = str(c.get('Dueño', '')).strip()
         nombre_mostrar = "Grupo / Sin nombre" if normalizar(nombre_cliente) in ['', 'nan'] else nombre_cliente
-
-        acceso_ficha = normalizar(str(c.get('Acceso_Ficha', '')))
-        ficha_verificada = normalizar(str(c.get('Ficha_Verificada', '')))
-        tiene_acceso = acceso_ficha == "si"
-        esta_verificada = ficha_verificada == "si"
 
         col1, col2 = st.columns([1, 2])
 
@@ -301,6 +345,10 @@ if df is not None:
                 st.error("Cliente de BAJA - se anadira coletilla de reactivacion")
             if tiene_facturas:
                 st.warning("Facturas Pendientes - se anadira coletilla de cobro")
+            if not tiene_acceso:
+                st.warning("Sin acceso a ficha - se anadira coletilla de solicitud de acceso")
+            if tiene_acceso and not esta_verificada:
+                st.warning("Ficha sin verificar - se anadira coletilla de verificacion")
 
             nota = str(c.get('Notas_Criticas', ''))
             if nota != '' and normalizar(nota) != 'nan':
@@ -354,7 +402,7 @@ if df is not None:
                     else:
                         st.warning("Escribe que necesitas antes de generar.")
 
-                if "mensaje_libre" in st.session_state and st.session_state["mensaje_libre"]:
+                if "mensaje_libre" in st.session_state and st.session_state["mensaje_libre"] != "":
                     st.success("Sugerencia:")
                     st.markdown(st.session_state["mensaje_libre"])
                     boton_copiar(st.session_state["mensaje_libre"], "libre")
@@ -403,7 +451,7 @@ if df is not None:
                         else:
                             st.warning("Selecciona un tipo de mensaje antes de generar.")
 
-                    if "mensaje_recurrente" in st.session_state and st.session_state["mensaje_recurrente"]:
+                    if "mensaje_recurrente" in st.session_state and st.session_state["mensaje_recurrente"] != "":
                         st.success("Mensaje generado:")
                         st.markdown(st.session_state["mensaje_recurrente"])
                         boton_copiar(st.session_state["mensaje_recurrente"], "recurrente")
