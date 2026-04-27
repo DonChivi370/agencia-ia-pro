@@ -43,17 +43,16 @@ def normalizar(texto):
 def construir_prompt(cliente):
     tipo = normalizar(cliente.get('Tipo_Cliente', ''))
     facturas = normalizar(cliente.get('Facturas_Pendientes', ''))
-    estatus = normalizar(cliente.get('Estatus', ''))
+    contacto = normalizar(cliente.get('Contacto', ''))
     nombre = str(cliente.get('Dueño', '')).strip()
 
     es_baja = tipo == "baja"
     tiene_facturas = facturas == "si"
-    es_grupo = estatus == "grupo"
-    nombre_vacio = normalizar(nombre) in ['', 'nan']
+    es_grupo = contacto == "grupo" or normalizar(nombre) in ['', 'nan']
 
     instrucciones = []
 
-    if es_grupo or nombre_vacio:
+    if es_grupo:
         instrucciones.append(
             "INSTRUCCION DE TONO - CLIENTE GRUPO:\n"
             "Estas hablando con un EQUIPO, no con una persona individual.\n"
@@ -130,7 +129,7 @@ def construir_prompt(cliente):
                 "- Que no pierda el posicionamiento ganado hasta ahora\n"
             )
 
-    return "\n".join(instrucciones), es_baja, tiene_facturas, es_grupo, nombre_vacio
+    return "\n".join(instrucciones), es_baja, tiene_facturas, es_grupo
 
 
 # 6. INSTRUCCIONES ESPECIFICAS POR TIPO DE MENSAJE RECURRENTE
@@ -227,25 +226,25 @@ def instruccion_mensaje_recurrente(nombre_mensaje, es_grupo):
 
 # 7. COMPONENTE PARA COPIAR MENSAJE
 def boton_copiar(texto, key):
-    texto_js = texto.replace('`', r'\`').replace('\\', '\\\\').replace('\n', '\\n')
-    componente = f"""
-        <script>
-        function copiarTexto_{key}() {{
-            const texto = `{texto_js}`;
-            navigator.clipboard.writeText(texto).then(function() {{
-                document.getElementById('btn_{key}').innerText = 'Copiado!';
-                setTimeout(function() {{
-                    document.getElementById('btn_{key}').innerText = 'Copiar mensaje';
-                }}, 2000);
-            }});
-        }}
-        </script>
-        <button id="btn_{key}" onclick="copiarTexto_{key}()"
-            style="background-color:#4CAF50;color:white;border:none;padding:8px 16px;
-            border-radius:6px;cursor:pointer;font-size:14px;margin-top:8px;">
-            Copiar mensaje
-        </button>
-    """
+    texto_js = texto.replace('\\', '\\\\').replace('`', '\\`').replace('\n', '\\n')
+    componente = (
+        "<script>"
+        "function copiarTexto_" + key + "() {"
+        "  const texto = `" + texto_js + "`;"
+        "  navigator.clipboard.writeText(texto).then(function() {"
+        "    document.getElementById('btn_" + key + "').innerText = 'Copiado!';"
+        "    setTimeout(function() {"
+        "      document.getElementById('btn_" + key + "').innerText = 'Copiar mensaje';"
+        "    }, 2000);"
+        "  });"
+        "}"
+        "</script>"
+        "<button id='btn_" + key + "' onclick='copiarTexto_" + key + "()'"
+        " style='background-color:#4CAF50;color:white;border:none;padding:8px 16px;"
+        "border-radius:6px;cursor:pointer;font-size:14px;margin-top:8px;'>"
+        "Copiar mensaje"
+        "</button>"
+    )
     st.components.v1.html(componente, height=50)
 
 
@@ -263,24 +262,38 @@ if df is not None:
 
     if cliente_sel:
         c = df[df["Nombre_Local"] == cliente_sel].iloc[0]
-        instrucciones_extra, es_baja, tiene_facturas, es_grupo, nombre_vacio = construir_prompt(c)
+        instrucciones_extra, es_baja, tiene_facturas, es_grupo = construir_prompt(c)
 
         nombre_cliente = str(c.get('Dueño', '')).strip()
-        if normalizar(nombre_cliente) in ['', 'nan']:
-            nombre_mostrar = "Grupo / Sin nombre"
-        else:
-            nombre_mostrar = nombre_cliente
+        nombre_mostrar = "Grupo / Sin nombre" if normalizar(nombre_cliente) in ['', 'nan'] else nombre_cliente
+
+        acceso_ficha = normalizar(str(c.get('Acceso_Ficha', '')))
+        ficha_verificada = normalizar(str(c.get('Ficha_Verificada', '')))
+        tiene_acceso = acceso_ficha == "si"
+        esta_verificada = ficha_verificada == "si"
 
         col1, col2 = st.columns([1, 2])
 
         with col1:
             st.subheader("Ficha del Cliente")
             st.info("Nombre del cliente: " + nombre_mostrar)
-            st.write("Estatus: " + str(c.get('Estatus', 'N/A')))
+            st.write("Contacto: " + str(c.get('Contacto', 'N/A')))
             st.write("Fase: " + str(c.get('Fase_Protocolo', 'N/A')))
             st.write("Tipo: " + str(c.get('Tipo_Cliente', 'N/A')))
 
-            if es_grupo or nombre_vacio:
+            col_a, col_b = st.columns(2)
+            with col_a:
+                if tiene_acceso:
+                    st.success("Acceso ficha: Si")
+                else:
+                    st.error("Acceso ficha: No")
+            with col_b:
+                if esta_verificada:
+                    st.success("Verificada: Si")
+                else:
+                    st.error("Verificada: No")
+
+            if es_grupo:
                 st.info("Cliente GRUPO - tono de equipo activado")
             else:
                 st.info("Cliente INDIVIDUAL - tono personal activado")
@@ -300,7 +313,6 @@ if df is not None:
                 st.subheader("Asistente")
                 tema = st.text_area("Que necesitas?", key="tema_libre")
 
-                # Detectar si el tema es una solicitud de factura
                 solicitud_factura = False
                 if tema:
                     palabras_factura = ["factura", "facturas", "recibo", "recibos", "cobro", "pago"]
@@ -322,7 +334,7 @@ if df is not None:
                                         "\nINSTRUCCION ESPECIAL - SOLICITUD DE FACTURA:\n"
                                         "El cliente esta solicitando una factura o informacion sobre facturacion.\n"
                                         "Responde de forma amable indicando que trasladamos su solicitud al departamento de facturacion\n"
-                                        "y que recibirá la factura en su correo electronico en breve.\n"
+                                        "y que recibira la factura en su correo electronico en breve.\n"
                                         "Tono tranquilizador y eficiente. No prometas plazos concretos.\n"
                                     )
 
@@ -336,8 +348,7 @@ if df is not None:
                                     ],
                                     max_tokens=1024
                                 )
-                                mensaje_generado = respuesta.choices[0].message.content
-                                st.session_state["mensaje_libre"] = mensaje_generado
+                                st.session_state["mensaje_libre"] = respuesta.choices[0].message.content
                             except Exception as e:
                                 st.error("Error IA: " + str(e))
                     else:
@@ -370,7 +381,7 @@ if df is not None:
                         if mensaje_sel:
                             with st.spinner("Generando mensaje recurrente..."):
                                 try:
-                                    instruccion_especifica = instruccion_mensaje_recurrente(mensaje_sel, es_grupo or nombre_vacio)
+                                    instruccion_especifica = instruccion_mensaje_recurrente(mensaje_sel, es_grupo)
                                     system_prompt = prompt_maestro + "\n\n" + instrucciones_extra
                                     user_prompt = (
                                         "Cliente: " + str(c.to_dict()) +
@@ -386,8 +397,7 @@ if df is not None:
                                         ],
                                         max_tokens=512
                                     )
-                                    mensaje_recurrente = respuesta.choices[0].message.content
-                                    st.session_state["mensaje_recurrente"] = mensaje_recurrente
+                                    st.session_state["mensaje_recurrente"] = respuesta.choices[0].message.content
                                 except Exception as e:
                                     st.error("Error IA: " + str(e))
                         else:
