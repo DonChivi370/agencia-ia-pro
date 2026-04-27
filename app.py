@@ -75,6 +75,46 @@ def construir_prompt(cliente):
             "- Transmite cercania personal y confianza uno a uno\n"
         )
 
+    # Estado de la ficha: contexto clave para la IA
+    if not tiene_acceso:
+        instrucciones.append(
+            "CONTEXTO CRITICO - SIN ACCESO A FICHA:\n"
+            "NO tenemos acceso a la ficha de Google Business de este cliente.\n"
+            "Esto significa que NO podemos realizar ningun trabajo de optimizacion en su ficha.\n"
+            "Si el cliente se queja de que no hacemos nada o no ve resultados:\n"
+            "- Explicale con empatia que para trabajar en su ficha necesitamos que nos de acceso.\n"
+            "- Sin ese acceso es imposible tocar nada tecnicamente.\n"
+            "- Dile que en cuanto nos lo conceda arrancamos de inmediato.\n"
+            "- Tono: empatico y constructivo, nunca defensivo ni con excusas.\n"
+            "Al final del mensaje anade una coletilla amable solicitando el acceso,\n"
+            "explicando que con el podemos optimizar su ficha, mejorar su visibilidad y atraer mas clientes.\n"
+        )
+    elif tiene_acceso and not esta_verificada:
+        instrucciones.append(
+            "CONTEXTO CRITICO - ACCESO SI, VERIFICACION NO:\n"
+            "Tenemos acceso a la ficha pero NO esta verificada en Google.\n"
+            "Esto significa que aunque podemos ver la ficha, los cambios que hagamos no tienen efecto completo\n"
+            "hasta que Google confirme que el negocio es real mediante la verificacion.\n"
+            "Si el cliente se queja de que no hacemos nada o no ve resultados:\n"
+            "- Explicale que la ficha sin verificar es como una tienda con la persiana bajada.\n"
+            "- Google no la muestra correctamente y nuestros cambios no surten pleno efecto.\n"
+            "- La verificacion es el paso imprescindible y urgente.\n"
+            "- Recuerdale los metodos: SMS/llamada, email, video, videollamada o carta postal.\n"
+            "- Tono: urgente pero tranquilizador, nosotros le guiamos en todo.\n"
+            "Al final del mensaje anade una coletilla recordando que hay que completar la verificacion\n"
+            "para que el negocio se muestre correctamente, mejore su visibilidad y atraiga mas clientes.\n"
+        )
+    else:
+        instrucciones.append(
+            "CONTEXTO DE FICHA - ACCESO Y VERIFICACION OK:\n"
+            "Tenemos acceso a la ficha Y esta verificada en Google.\n"
+            "Podemos trabajar con total normalidad en la optimizacion del negocio.\n"
+            "Si el cliente se queja de que no hacemos nada o no ve resultados:\n"
+            "- Explicale que el trabajo mas importante ocurre por debajo, en la optimizacion tecnica.\n"
+            "- Es como el motor de un coche: no lo ves pero es lo que te mueve.\n"
+            "- Ofrece compartirle datos o un resumen de lo trabajado.\n"
+        )
+
     if es_baja and tiene_facturas:
         if es_grupo:
             instrucciones.append(
@@ -131,44 +171,6 @@ def construir_prompt(cliente):
                 "- Menciona que hay un pequeno desajuste administrativo con los ultimos recibos\n"
                 "- Indica que es clave regularizarlo para no pausar el ritmo tecnico\n"
                 "- Que no pierda el posicionamiento ganado hasta ahora\n"
-            )
-
-    if not tiene_acceso:
-        if es_grupo:
-            instrucciones.append(
-                "INSTRUCCION OBLIGATORIA - SIN ACCESO A FICHA:\n"
-                "No tenemos acceso a la ficha de Google Business de este cliente.\n"
-                "Al final del mensaje anade una coletilla amable indicando que necesitamos que nos den acceso a su ficha.\n"
-                "Explica de forma sencilla que con acceso podemos optimizarla mejor, mejorar su visibilidad en Google y atraer mas clientes.\n"
-                "Tono: cercano, como un paso importante que depende de ellos para que el servicio funcione al 100%.\n"
-            )
-        else:
-            instrucciones.append(
-                "INSTRUCCION OBLIGATORIA - SIN ACCESO A FICHA:\n"
-                "No tenemos acceso a la ficha de Google Business de este cliente.\n"
-                "Al final del mensaje anade una coletilla amable indicando que necesitamos que nos de acceso a su ficha.\n"
-                "Explica de forma sencilla que con acceso podemos optimizarla mejor, mejorar su visibilidad en Google y atraer mas clientes.\n"
-                "Tono: cercano, como un paso importante que depende de el para que el servicio funcione al 100%.\n"
-            )
-
-    if tiene_acceso and not esta_verificada:
-        if es_grupo:
-            instrucciones.append(
-                "INSTRUCCION OBLIGATORIA - FICHA SIN VERIFICAR:\n"
-                "Tenemos acceso a la ficha pero NO esta verificada en Google.\n"
-                "Al final del mensaje anade una coletilla recordando que hay que pasar el proceso de verificacion.\n"
-                "Explica de forma simple que sin verificacion el negocio no se muestra correctamente en Google,\n"
-                "lo que reduce su visibilidad, su optimizacion y la captacion de nuevos clientes.\n"
-                "Tono: urgente pero tranquilizador, algo que hay que resolver pronto y que nosotros les ayudamos a gestionar.\n"
-            )
-        else:
-            instrucciones.append(
-                "INSTRUCCION OBLIGATORIA - FICHA SIN VERIFICAR:\n"
-                "Tenemos acceso a la ficha pero NO esta verificada en Google.\n"
-                "Al final del mensaje anade una coletilla recordando que hay que pasar el proceso de verificacion.\n"
-                "Explica de forma simple que sin verificacion el negocio no se muestra correctamente en Google,\n"
-                "lo que reduce su visibilidad, su optimizacion y la captacion de nuevos clientes.\n"
-                "Tono: urgente pero tranquilizador, algo que hay que resolver pronto y que nosotros le ayudamos a gestionar.\n"
             )
 
     return "\n".join(instrucciones), es_baja, tiene_facturas, es_grupo, tiene_acceso, esta_verificada
@@ -304,7 +306,6 @@ if df is not None:
 
     if cliente_sel:
 
-        # Limpiar mensajes al cambiar de cliente
         if st.session_state.get("cliente_anterior") != cliente_sel:
             st.session_state["mensaje_libre"] = ""
             st.session_state["mensaje_recurrente"] = ""
@@ -346,9 +347,9 @@ if df is not None:
             if tiene_facturas:
                 st.warning("Facturas Pendientes - se anadira coletilla de cobro")
             if not tiene_acceso:
-                st.warning("Sin acceso a ficha - se anadira coletilla de solicitud de acceso")
+                st.warning("Sin acceso a ficha - la IA explicara el bloqueo y solicitara acceso")
             if tiene_acceso and not esta_verificada:
-                st.warning("Ficha sin verificar - se anadira coletilla de verificacion")
+                st.warning("Ficha sin verificar - la IA explicara el bloqueo y solicitara verificacion")
 
             nota = str(c.get('Notas_Criticas', ''))
             if nota != '' and normalizar(nota) != 'nan':
