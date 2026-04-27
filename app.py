@@ -130,63 +130,97 @@ def construir_prompt(cliente):
 
     return "\n".join(instrucciones), es_baja, tiene_facturas, es_grupo
 
+
 # 6. INSTRUCCIONES ESPECIFICAS POR TIPO DE MENSAJE RECURRENTE
 def instruccion_mensaje_recurrente(nombre_mensaje, es_grupo):
     plural = es_grupo
+
     mensajes = {
         "Envio de Contenido Original": (
-            "Has creado una publicacion de contenido original para el negocio del cliente.\n"
-            "Redacta un mensaje informal y cercano enviandosela y preguntando si le gusta para subirla a su ficha de Google.\n"
-            "Menciona de forma sencilla y sin tecnicismos que subir contenido original mejora la visibilidad en Google y atrae mas clientes.\n"
-            "No uses palabras tecnicas. El cliente no es experto en marketing.\n"
+            "Hemos creado una publicacion de contenido original para el negocio del cliente.\n"
+            "Redacta un mensaje BREVE, cercano y con 2-3 emojis relevantes.\n"
+            "Dile que le enviamos una publicacion nueva y preguntale si le gusta para subirla a su ficha de Google.\n"
+            "Menciona de forma muy simple que esto le da mas visibilidad. Sin tecnicismos.\n"
+            "Maximo 4-5 lineas. Tono: como si le escribiera un amigo que le ayuda con su negocio.\n"
         ),
         "Optimizacion de la ficha": (
-            "Hemos realizado optimizaciones tecnicas en la ficha de Google Business del cliente.\n"
-            "Redacta un mensaje cercano explicando que hemos estado trabajando en su ficha para mejorar su posicionamiento.\n"
-            "Explica de forma simple y sin tecnicismos que estos cambios hacen que su negocio aparezca mas arriba en Google y gane mas visibilidad.\n"
-            "Transmite que es un trabajo continuo que hacemos por ellos aunque no lo vean a simple vista.\n"
+            "Hemos realizado mejoras tecnicas en la ficha de Google Business del cliente.\n"
+            "Redacta un mensaje BREVE, cercano y con 2-3 emojis relevantes.\n"
+            "Dile que hemos estado trabajando en su ficha para que aparezca mas arriba en Google.\n"
+            "Transmite que es un trabajo que hacemos en silencio pero que tiene impacto real.\n"
+            "Maximo 4-5 lineas. Tono: socio estrategico que cuida su negocio.\n"
         ),
         "Respuesta a reseñas": (
-            "Hemos contestado reseñas en la ficha de Google del cliente.\n"
-            "Redacta un mensaje informando de que hemos gestionado y respondido las reseñas recibidas.\n"
-            "Dale la enhorabuena por las valoraciones positivas y alaba el buen trabajo que esta haciendo con sus clientes.\n"
-            "Transmite que responder reseñas mejora la imagen del negocio y su posicionamiento en Google.\n"
+            "Hemos contestado las reseñas de la ficha de Google del cliente.\n"
+            "Redacta un mensaje BREVE, cercano y con 2-3 emojis relevantes.\n"
+            "Informale de que hemos gestionado sus reseñas y dale la enhorabuena por las valoraciones positivas.\n"
+            "Alaba brevemente el buen trabajo que esta haciendo con sus clientes.\n"
+            "Maximo 4-5 lineas. Tono: celebracion y apoyo, como un socio orgulloso.\n"
         ),
         "Subida de contenido": (
             "Hemos subido nuevo contenido a la ficha de Google Business del cliente.\n"
-            "Redacta un mensaje avisando de que hemos publicado nuevo contenido en su ficha.\n"
-            "Explica de forma sencilla que mantener la ficha activa con contenido fresco hace que Google la valore mas y atraiga mas clientes.\n"
+            "Redacta un mensaje BREVE, cercano y con 2-3 emojis relevantes.\n"
+            "Avisale de que hemos publicado contenido nuevo en su ficha para mantenerla activa.\n"
+            "Explica en una frase simple que esto hace que Google valore mas su negocio.\n"
+            "Maximo 4-5 lineas. Tono: equipo trabajando por su exito.\n"
         ),
         "Promo del negocio": (
-            "Queremos crear una novedad o promocion para el negocio del cliente para subir a su ficha de Google.\n"
-            "Redacta un mensaje solicitando al cliente informacion sobre alguna oferta, novedad, evento o promocion que quiera comunicar.\n"
-            "Explica que publicar promociones en Google atrae clientes nuevos y mejora el SEO local de su negocio.\n"
-            "El tono debe ser entusiasta y motivador, como si fuera una gran oportunidad para su negocio.\n"
+            "Queremos crear una promocion o novedad para publicar en la ficha del cliente.\n"
+            "Redacta un mensaje BREVE, cercano y con 2-3 emojis relevantes.\n"
+            "Pidele que te cuente si tiene alguna oferta, evento o novedad que quiera comunicar.\n"
+            "Transmite entusiasmo: es una oportunidad para atraer clientes nuevos.\n"
+            "Maximo 4-5 lineas. Tono: emocionado y motivador, como quien ve una oportunidad clara.\n"
         ),
         "Horarios festivos": (
-            "Se acerca un festivo y necesitamos saber si el cliente va a modificar su horario.\n"
-            "Redacta un mensaje preguntando al cliente si va a tener horario especial o va a cerrar en el proximo festivo.\n"
-            "Explica que es importante tener los horarios actualizados en Google para que sus clientes no se lleven sorpresas.\n"
-            "El tono debe ser de servicio y cuidado hacia el negocio del cliente.\n"
+            "Se acerca un festivo y necesitamos confirmar el horario del cliente.\n"
+            "Redacta un mensaje BREVE, cercano y con 2-3 emojis relevantes.\n"
+            "Preguntale si va a modificar su horario o cerrar durante el proximo festivo.\n"
+            "Explica en una frase que tener el horario actualizado evita que sus clientes se lleven sorpresas.\n"
+            "Maximo 4-5 lineas. Tono: servicio y cuidado, como quien vela por los detalles.\n"
         ),
         "Recordatorio de uso de QR": (
-            "El cliente tiene un QR de valorame5estrellas y queremos recordarle que lo use.\n"
-            "Redacta un mensaje recordando al cliente que comparta el QR con sus clientes para conseguir mas reseñas en Google.\n"
-            "Explica de forma simple que mas reseñas positivas significa mejor posicion en Google y mas clientes nuevos.\n"
-            "Recuerda que el sistema filtra las opiniones negativas para que lleguen al dueno en privado y no manchen la ficha.\n"
+            "El cliente tiene un QR de valorame5estrellas y queremos que lo use mas.\n"
+            "Redacta un mensaje BREVE, cercano y con 2-3 emojis relevantes.\n"
+            "Recuerdale que comparta el QR con sus clientes para conseguir mas reseñas en Google.\n"
+            "Menciona que mas reseñas positivas significa mejor posicion y mas clientes nuevos.\n"
+            "Recuerda que las opiniones negativas le llegan a el en privado, no se publican.\n"
+            "Maximo 4-5 lineas. Tono: consejo de un socio que quiere que le vaya bien.\n"
         ),
         "Recordatorio de la tarjeta digital": (
-            "El cliente tiene una Tarjeta Premier Digital y queremos recordarle que la use.\n"
-            "Redacta un mensaje recordando al cliente que comparta su tarjeta digital por WhatsApp y redes sociales.\n"
-            "Explica que la tarjeta digital es como una App personalizada de su negocio que sus clientes pueden llevar en el movil.\n"
-            "Transmite que compartirla es la forma mas facil de conseguir visibilidad digital y que sus clientes recomienden el local.\n"
+            "El cliente tiene una Tarjeta Premier Digital y queremos que la comparta mas.\n"
+            "Redacta un mensaje BREVE, cercano y con 2-3 emojis relevantes.\n"
+            "Recuerdale que la comparta por WhatsApp y redes para ganar visibilidad digital.\n"
+            "Explica en una frase que es como una App de su negocio que sus clientes llevan en el movil.\n"
+            "Maximo 4-5 lineas. Tono: entusiasta, como quien le recuerda que tiene una herramienta potente sin usar.\n"
         ),
     }
-    base = mensajes.get(nombre_mensaje, "Genera un mensaje recurrente profesional y cercano para este cliente.\n")
+
+    base = mensajes.get(nombre_mensaje, "Genera un mensaje recurrente breve, cercano y con emojis para este cliente.\n")
+
     if plural:
-        base += "\nRECUERDA: Dirígete al EQUIPO en plural. Usa: vosotros, el equipo, juntos, chicos.\n"
+        base += (
+            "\nIMPORTANTE DE TONO:\n"
+            "- Dirigete al EQUIPO en plural: vosotros, el equipo, juntos, chicos\n"
+            "- Saluda como: Hola equipo!, Hola chicos!, Hola familia!\n"
+            "- Cierra con energia de equipo: Seguimos juntos!, Vamos equipo!\n"
+        )
     else:
-        base += "\nRECUERDA: Dirígete a la persona de forma INDIVIDUAL. Usa: tu, tu negocio, [nombre].\n"
+        base += (
+            "\nIMPORTANTE DE TONO:\n"
+            "- Dirigete a la persona de forma INDIVIDUAL: tu, tu negocio\n"
+            "- Saluda de forma personal: Hola [nombre]!\n"
+            "- Cierra con motivacion individual: Seguimos optimizando!, Vamos a por mas!\n"
+        )
+
+    base += (
+        "\nREGLAS GENERALES DEL MENSAJE:\n"
+        "- Usa entre 2 y 3 emojis repartidos de forma natural en el mensaje\n"
+        "- El mensaje debe ser BREVE: maximo 5 lineas\n"
+        "- Tono cercano y profesional a la vez, como un socio de confianza\n"
+        "- Nada de tecnicismos ni palabras complicadas\n"
+        "- Termina siempre con una frase motivadora corta\n"
+    )
+
     return base
 
 
@@ -291,7 +325,7 @@ if df is not None:
                                             {"role": "system", "content": system_prompt},
                                             {"role": "user", "content": user_prompt}
                                         ],
-                                        max_tokens=1024
+                                        max_tokens=512
                                     )
                                     st.success("Mensaje generado:")
                                     st.markdown(respuesta.choices[0].message.content)
