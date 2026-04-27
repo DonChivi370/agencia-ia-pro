@@ -23,7 +23,7 @@ def cargar_datos():
         prompt = df_p.columns[1]
         return df_c, prompt
     except Exception as e:
-        st.error(f"Error de conexión: {e}")
+        st.error(f"Error de conexion: {e}")
         return None, None
 
 df, prompt_maestro = cargar_datos()
@@ -41,88 +41,94 @@ def construir_prompt(cliente):
     facturas = normalizar(cliente.get('Facturas_Pendientes', ''))
     estatus = normalizar(cliente.get('Estatus', ''))
 
-    # tipo_cliente: "baja" = baja, cualquier otra cosa (alta, individual, vacío) = individual activo
     es_baja = tipo == "baja"
-    # facturas_pendientes: "si" = tiene facturas, "no" o cualquier otra cosa = sin facturas
     tiene_facturas = facturas == "si"
-    # estatus: "grupo" = grupo, "individual" o cualquier otra cosa = individual
     es_grupo = estatus == "grupo"
 
     instrucciones = []
 
     if es_grupo:
-        instrucciones.append("""
-INSTRUCCIÓN DE TONO - CLIENTE GRUPO:
-Estás hablando con un EQUIPO, no con una persona individual.
-- Usa siempre lenguaje en plural: "vosotros", "el equipo", "juntos"
-- Saluda como: "¡Hola equipo!", "¡Hola familia!", "¡Hola chicos!"
-- Cierra siempre con frases de equipo: "¡Vamos equipo!", "¡Juntos a por más!", "¡Seguimos creciendo juntos!"
-- Transmite energía colectiva y sentido de comunidad en todo el mensaje
-""")
+        instrucciones.append(
+            "INSTRUCCION DE TONO - CLIENTE GRUPO:\n"
+            "Estas hablando con un EQUIPO, no con una persona individual.\n"
+            "- Usa siempre lenguaje en plural: vosotros, el equipo, juntos\n"
+            "- Saluda como: Hola equipo!, Hola familia!, Hola chicos!\n"
+            "- Cierra siempre con frases de equipo: Vamos equipo!, Juntos a por mas!, Seguimos creciendo juntos!\n"
+            "- Transmite energia colectiva y sentido de comunidad en todo el mensaje\n"
+        )
     else:
-        instrucciones.append("""
-INSTRUCCIÓN DE TONO - CLIENTE INDIVIDUAL:
-Estás hablando con UNA persona individual.
-- Usa siempre lenguaje en singular: "tú", "tu negocio"
-- Saluda de forma personal: "¡Hola [nombre]!"
-- Cierra con frases individuales: "¡Tú puedes!", "¡Seguimos optimizando!", "¡Vamos a por más!"
-- Transmite cercanía personal y confianza uno a uno
-""")
+        instrucciones.append(
+            "INSTRUCCION DE TONO - CLIENTE INDIVIDUAL:\n"
+            "Estas hablando con UNA persona individual.\n"
+            "- Usa siempre lenguaje en singular: tu, tu negocio\n"
+            "- Saluda de forma personal: Hola [nombre]!\n"
+            "- Cierra con frases individuales: Tu puedes!, Seguimos optimizando!, Vamos a por mas!\n"
+            "- Transmite cercania personal y confianza uno a uno\n"
+        )
 
     if es_baja and tiene_facturas:
-        instrucciones.append("""
-INSTRUCCIÓN OBLIGATORIA - BAJA + FACTURAS PENDIENTES:
-Este cliente está de BAJA y tiene FACTURAS PENDIENTES.
-Añade DOS coletillas al final del mensaje:
-1. Recuérdale amablemente las facturas pendientes y la importancia de regularizarlas.
-2. Invítale a reactivar el servicio recordando que la competencia está ganando terreno
-   y que tiene herramientas como la Tarjeta Digital y el QR sin aprovechar.
-""" if not es_grupo else """
-INSTRUCCIÓN OBLIGATORIA - BAJA + FACTURAS PENDIENTES:
-El equipo está de BAJA y tiene FACTURAS PENDIENTES.
-Añade DOS coletillas al final del mensaje:
-1. Recuérdalles amablemente las facturas pendientes y la importancia de regularizarlas.
-2. Invítales a reactivar el servicio recordando que la competencia está ganando terreno
-   y que tienen herramientas como la Tarjeta Digital y el QR sin aprovechar.
-""")
+        if es_grupo:
+            instrucciones.append(
+                "INSTRUCCION OBLIGATORIA - BAJA + FACTURAS PENDIENTES:\n"
+                "El equipo esta de BAJA y tiene FACTURAS PENDIENTES.\n"
+                "Anade DOS coletillas al final del mensaje:\n"
+                "1. Recuerdalles amablemente las facturas pendientes y la importancia de regularizarlas.\n"
+                "2. Invitales a reactivar el servicio recordando que la competencia esta ganando terreno\n"
+                "   y que tienen herramientas como la Tarjeta Digital y el QR sin aprovechar.\n"
+            )
+        else:
+            instrucciones.append(
+                "INSTRUCCION OBLIGATORIA - BAJA + FACTURAS PENDIENTES:\n"
+                "Este cliente esta de BAJA y tiene FACTURAS PENDIENTES.\n"
+                "Anade DOS coletillas al final del mensaje:\n"
+                "1. Recuerdale amablemente las facturas pendientes y la importancia de regularizarlas.\n"
+                "2. Invitale a reactivar el servicio recordando que la competencia esta ganando terreno\n"
+                "   y que tiene herramientas como la Tarjeta Digital y el QR sin aprovechar.\n"
+            )
     elif es_baja:
-        instrucciones.append("""
-INSTRUCCIÓN OBLIGATORIA - CLIENTE DE BAJA:
-Este cliente está de BAJA.
-Al final del mensaje añade una coletilla para que reactive el servicio:
-- Recuérdale que la competencia está ganando terreno
-- Menciona que la Tarjeta Digital y el QR son armas que ahora no está aprovechando
-- Pregunta si quiere reactivar
-""" if not es_grupo else """
-INSTRUCCIÓN OBLIGATORIA - CLIENTE DE BAJA:
-El equipo está de BAJA.
-Al final del mensaje añade una coletilla para que reactiven el servicio:
-- Recuérdalles que la competencia está ganando terreno
-- Menciona que la Tarjeta Digital y el QR son armas que ahora no están aprovechando
-- Pregunta si quieren reactivar
-""")
+        if es_grupo:
+            instrucciones.append(
+                "INSTRUCCION OBLIGATORIA - CLIENTE DE BAJA:\n"
+                "El equipo esta de BAJA.\n"
+                "Al final del mensaje anade una coletilla para que reactiven el servicio:\n"
+                "- Recuerdalles que la competencia esta ganando terreno\n"
+                "- Menciona que la Tarjeta Digital y el QR son armas que ahora no estan aprovechando\n"
+                "- Pregunta si quieren reactivar\n"
+            )
+        else:
+            instrucciones.append(
+                "INSTRUCCION OBLIGATORIA - CLIENTE DE BAJA:\n"
+                "Este cliente esta de BAJA.\n"
+                "Al final del mensaje anade una coletilla para que reactive el servicio:\n"
+                "- Recuerdale que la competencia esta ganando terreno\n"
+                "- Menciona que la Tarjeta Digital y el QR son armas que ahora no esta aprovechando\n"
+                "- Pregunta si quiere reactivar\n"
+            )
     elif tiene_facturas:
-        instrucciones.append("""
-INSTRUCCIÓN OBLIGATORIA - FACTURAS PENDIENTES:
-Este cliente tiene FACTURAS PENDIENTES.
-Al final del mensaje añade una coletilla delicada de cobro:
-- Menciona que hay un pequeño desajuste administrativo con los últimos recibos
-- Indica que es clave regularizarlo para no pausar el ritmo técnico
-- Que no pierda el posicionamiento ganado hasta ahora
-""" if not es_grupo else """
-INSTRUCCIÓN OBLIGATORIA - FACTURAS PENDIENTES:
-El equipo tiene FACTURAS PENDIENTES.
-Al final del mensaje añade una coletilla delicada de cobro:
-- Menciona que hay un pequeño desajuste administrativo con los últimos recibos
-- Indica que es clave regularizarlo para no pausar el ritmo técnico
-- Que no pierdan el posicionamiento ganado hasta ahora
-""")
+        if es_grupo:
+            instrucciones.append(
+                "INSTRUCCION OBLIGATORIA - FACTURAS PENDIENTES:\n"
+                "El equipo tiene FACTURAS PENDIENTES.\n"
+                "Al final del mensaje anade una coletilla delicada de cobro:\n"
+                "- Menciona que hay un pequeno desajuste administrativo con los ultimos recibos\n"
+                "- Indica que es clave regularizarlo para no pausar el ritmo tecnico\n"
+                "- Que no pierdan el posicionamiento ganado hasta ahora\n"
+            )
+        else:
+            instrucciones.append(
+                "INSTRUCCION OBLIGATORIA - FACTURAS PENDIENTES:\n"
+                "Este cliente tiene FACTURAS PENDIENTES.\n"
+                "Al final del mensaje anade una coletilla delicada de cobro:\n"
+                "- Menciona que hay un pequeno desajuste administrativo con los ultimos recibos\n"
+                "- Indica que es clave regularizarlo para no pausar el ritmo tecnico\n"
+                "- Que no pierda el posicionamiento ganado hasta ahora\n"
+            )
 
     return "\n".join(instrucciones), es_baja, tiene_facturas, es_grupo
 
 
 # 6. INTERFAZ
-st.title("🚀 Gestión Agencia IA Pro")
+st.title("Gestion Agencia IA Pro")
 
 if df is not None:
     st.sidebar.header("Panel de Control")
@@ -140,15 +146,49 @@ if df is not None:
         col1, col2 = st.columns([1, 2])
 
         with col1:
-            st.subheader("📋 Ficha del Cliente")
-            st.info(f"**Dueño:** {c['Dueño']}")
-            st.write(f"**Estatus:** {c.get('Estatus', 'N/A')}")
-            st.write(f"**Fase:** {c.get('Fase_Protocolo', 'N/A')}")
-            st.write(f"**Tipo:** {c.get('Tipo_Cliente', 'N/A')}")
+            st.subheader("Ficha del Cliente")
+            st.info("Dueno: " + str(c['Dueño']))
+            st.write("Estatus: " + str(c.get('Estatus', 'N/A')))
+            st.write("Fase: " + str(c.get('Fase_Protocolo', 'N/A')))
+            st.write("Tipo: " + str(c.get('Tipo_Cliente', 'N/A')))
 
             if es_grupo:
-                st.info("👥 Cliente GRUPO — tono de equipo activado")
+                st.info("Cliente GRUPO - tono de equipo activado")
             else:
-                st.info("👤 Cliente INDIVIDUAL — tono personal activado")
+                st.info("Cliente INDIVIDUAL - tono personal activado")
+
             if es_baja:
-                st.error(
+                st.error("Cliente de BAJA - se anadira coletilla de reactivacion")
+
+            if tiene_facturas:
+                st.warning("Facturas Pendientes - se anadira coletilla de cobro")
+
+            nota = str(c.get('Notas_Criticas', ''))
+            if nota != '' and normalizar(nota) != 'nan':
+                st.error("Nota: " + nota)
+
+        with col2:
+            st.subheader("Asistente")
+            tema = st.text_area("Que necesitas?")
+            if st.button("Generar Mensaje"):
+                if tema:
+                    with st.spinner("Generando mensaje..."):
+                        try:
+                            system_prompt = prompt_maestro + "\n\n" + instrucciones_extra
+                            user_prompt = "Cliente: " + str(c.to_dict()) + "\n\nTarea: " + tema
+                            respuesta = client.chat.completions.create(
+                                model="llama-3.3-70b-versatile",
+                                messages=[
+                                    {"role": "system", "content": system_prompt},
+                                    {"role": "user", "content": user_prompt}
+                                ],
+                                max_tokens=1024
+                            )
+                            st.success("Sugerencia:")
+                            st.markdown(respuesta.choices[0].message.content)
+                        except Exception as e:
+                            st.error("Error IA: " + str(e))
+                else:
+                    st.warning("Escribe que necesitas antes de generar.")
+else:
+    st.info("Conectando con Google Sheets...")
