@@ -44,14 +44,16 @@ def construir_prompt(cliente):
     tipo = normalizar(cliente.get('Tipo_Cliente', ''))
     facturas = normalizar(cliente.get('Facturas_Pendientes', ''))
     estatus = normalizar(cliente.get('Estatus', ''))
+    nombre = str(cliente.get('Dueño', '')).strip()
 
     es_baja = tipo == "baja"
     tiene_facturas = facturas == "si"
     es_grupo = estatus == "grupo"
+    nombre_vacio = normalizar(nombre) in ['', 'nan']
 
     instrucciones = []
 
-    if es_grupo:
+    if es_grupo or nombre_vacio:
         instrucciones.append(
             "INSTRUCCION DE TONO - CLIENTE GRUPO:\n"
             "Estas hablando con un EQUIPO, no con una persona individual.\n"
@@ -63,9 +65,9 @@ def construir_prompt(cliente):
     else:
         instrucciones.append(
             "INSTRUCCION DE TONO - CLIENTE INDIVIDUAL:\n"
-            "Estas hablando con UNA persona individual.\n"
+            "Estas hablando con UNA persona individual. Su nombre es: " + nombre + "\n"
+            "- Usa su nombre en el saludo: Hola " + nombre + "!\n"
             "- Usa siempre lenguaje en singular: tu, tu negocio\n"
-            "- Saluda de forma personal: Hola [nombre]!\n"
             "- Cierra con frases individuales: Tu puedes!, Seguimos optimizando!, Vamos a por mas!\n"
             "- Transmite cercania personal y confianza uno a uno\n"
         )
@@ -128,76 +130,74 @@ def construir_prompt(cliente):
                 "- Que no pierda el posicionamiento ganado hasta ahora\n"
             )
 
-    return "\n".join(instrucciones), es_baja, tiene_facturas, es_grupo
+    return "\n".join(instrucciones), es_baja, tiene_facturas, es_grupo, nombre_vacio
 
 
 # 6. INSTRUCCIONES ESPECIFICAS POR TIPO DE MENSAJE RECURRENTE
 def instruccion_mensaje_recurrente(nombre_mensaje, es_grupo):
-    plural = es_grupo
-
     mensajes = {
         "Envio de Contenido Original": (
             "Hemos creado una publicacion de contenido original para el negocio del cliente.\n"
             "Redacta un mensaje BREVE, cercano y con 2-3 emojis relevantes.\n"
             "Dile que le enviamos una publicacion nueva y preguntale si le gusta para subirla a su ficha de Google.\n"
             "Menciona de forma muy simple que esto le da mas visibilidad. Sin tecnicismos.\n"
-            "Maximo 4-5 lineas. Tono: como si le escribiera un amigo que le ayuda con su negocio.\n"
+            "Maximo 5 lineas. Tono: como si le escribiera un amigo que le ayuda con su negocio.\n"
         ),
         "Optimizacion de la ficha": (
             "Hemos realizado mejoras tecnicas en la ficha de Google Business del cliente.\n"
             "Redacta un mensaje BREVE, cercano y con 2-3 emojis relevantes.\n"
             "Dile que hemos estado trabajando en su ficha para que aparezca mas arriba en Google.\n"
             "Transmite que es un trabajo que hacemos en silencio pero que tiene impacto real.\n"
-            "Maximo 4-5 lineas. Tono: socio estrategico que cuida su negocio.\n"
+            "Maximo 5 lineas. Tono: socio estrategico que cuida su negocio.\n"
         ),
         "Respuesta a reseñas": (
             "Hemos contestado las reseñas de la ficha de Google del cliente.\n"
             "Redacta un mensaje BREVE, cercano y con 2-3 emojis relevantes.\n"
             "Informale de que hemos gestionado sus reseñas y dale la enhorabuena por las valoraciones positivas.\n"
             "Alaba brevemente el buen trabajo que esta haciendo con sus clientes.\n"
-            "Maximo 4-5 lineas. Tono: celebracion y apoyo, como un socio orgulloso.\n"
+            "Maximo 5 lineas. Tono: celebracion y apoyo, como un socio orgulloso.\n"
         ),
         "Subida de contenido": (
             "Hemos subido nuevo contenido a la ficha de Google Business del cliente.\n"
             "Redacta un mensaje BREVE, cercano y con 2-3 emojis relevantes.\n"
             "Avisale de que hemos publicado contenido nuevo en su ficha para mantenerla activa.\n"
             "Explica en una frase simple que esto hace que Google valore mas su negocio.\n"
-            "Maximo 4-5 lineas. Tono: equipo trabajando por su exito.\n"
+            "Maximo 5 lineas. Tono: equipo trabajando por su exito.\n"
         ),
         "Promo del negocio": (
             "Queremos crear una promocion o novedad para publicar en la ficha del cliente.\n"
             "Redacta un mensaje BREVE, cercano y con 2-3 emojis relevantes.\n"
             "Pidele que te cuente si tiene alguna oferta, evento o novedad que quiera comunicar.\n"
             "Transmite entusiasmo: es una oportunidad para atraer clientes nuevos.\n"
-            "Maximo 4-5 lineas. Tono: emocionado y motivador, como quien ve una oportunidad clara.\n"
+            "Maximo 5 lineas. Tono: emocionado y motivador, como quien ve una oportunidad clara.\n"
         ),
         "Horarios festivos": (
             "Se acerca un festivo y necesitamos confirmar el horario del cliente.\n"
             "Redacta un mensaje BREVE, cercano y con 2-3 emojis relevantes.\n"
             "Preguntale si va a modificar su horario o cerrar durante el proximo festivo.\n"
             "Explica en una frase que tener el horario actualizado evita que sus clientes se lleven sorpresas.\n"
-            "Maximo 4-5 lineas. Tono: servicio y cuidado, como quien vela por los detalles.\n"
+            "Maximo 5 lineas. Tono: servicio y cuidado, como quien vela por los detalles.\n"
         ),
         "Recordatorio de uso de QR": (
             "El cliente tiene un QR de valorame5estrellas y queremos que lo use mas.\n"
             "Redacta un mensaje BREVE, cercano y con 2-3 emojis relevantes.\n"
             "Recuerdale que comparta el QR con sus clientes para conseguir mas reseñas en Google.\n"
             "Menciona que mas reseñas positivas significa mejor posicion y mas clientes nuevos.\n"
-            "Recuerda que las opiniones negativas le llegan a el en privado, no se publican.\n"
-            "Maximo 4-5 lineas. Tono: consejo de un socio que quiere que le vaya bien.\n"
+            "Recuerda que las opiniones negativas le llegan a el en privado, no se publican en Google.\n"
+            "Maximo 5 lineas. Tono: consejo de un socio que quiere que le vaya bien.\n"
         ),
         "Recordatorio de la tarjeta digital": (
             "El cliente tiene una Tarjeta Premier Digital y queremos que la comparta mas.\n"
             "Redacta un mensaje BREVE, cercano y con 2-3 emojis relevantes.\n"
             "Recuerdale que la comparta por WhatsApp y redes para ganar visibilidad digital.\n"
             "Explica en una frase que es como una App de su negocio que sus clientes llevan en el movil.\n"
-            "Maximo 4-5 lineas. Tono: entusiasta, como quien le recuerda que tiene una herramienta potente sin usar.\n"
+            "Maximo 5 lineas. Tono: entusiasta, como quien le recuerda que tiene una herramienta potente sin usar.\n"
         ),
     }
 
     base = mensajes.get(nombre_mensaje, "Genera un mensaje recurrente breve, cercano y con emojis para este cliente.\n")
 
-    if plural:
+    if es_grupo:
         base += (
             "\nIMPORTANTE DE TONO:\n"
             "- Dirigete al EQUIPO en plural: vosotros, el equipo, juntos, chicos\n"
@@ -207,7 +207,7 @@ def instruccion_mensaje_recurrente(nombre_mensaje, es_grupo):
     else:
         base += (
             "\nIMPORTANTE DE TONO:\n"
-            "- Dirigete a la persona de forma INDIVIDUAL: tu, tu negocio\n"
+            "- Dirigete a la persona de forma INDIVIDUAL usando su nombre si lo tienes\n"
             "- Saluda de forma personal: Hola [nombre]!\n"
             "- Cierra con motivacion individual: Seguimos optimizando!, Vamos a por mas!\n"
         )
@@ -219,12 +219,37 @@ def instruccion_mensaje_recurrente(nombre_mensaje, es_grupo):
         "- Tono cercano y profesional a la vez, como un socio de confianza\n"
         "- Nada de tecnicismos ni palabras complicadas\n"
         "- Termina siempre con una frase motivadora corta\n"
+        "- NO uses negritas, asteriscos ni formato markdown. Solo texto plano como un WhatsApp.\n"
     )
 
     return base
 
 
-# 7. INTERFAZ
+# 7. COMPONENTE PARA COPIAR MENSAJE
+def boton_copiar(texto, key):
+    texto_js = texto.replace('`', r'\`').replace('\\', '\\\\').replace('\n', '\\n')
+    componente = f"""
+        <script>
+        function copiarTexto_{key}() {{
+            const texto = `{texto_js}`;
+            navigator.clipboard.writeText(texto).then(function() {{
+                document.getElementById('btn_{key}').innerText = 'Copiado!';
+                setTimeout(function() {{
+                    document.getElementById('btn_{key}').innerText = 'Copiar mensaje';
+                }}, 2000);
+            }});
+        }}
+        </script>
+        <button id="btn_{key}" onclick="copiarTexto_{key}()"
+            style="background-color:#4CAF50;color:white;border:none;padding:8px 16px;
+            border-radius:6px;cursor:pointer;font-size:14px;margin-top:8px;">
+            Copiar mensaje
+        </button>
+    """
+    st.components.v1.html(componente, height=50)
+
+
+# 8. INTERFAZ
 st.title("Gestion Agencia IA Pro")
 
 if df is not None:
@@ -238,18 +263,24 @@ if df is not None:
 
     if cliente_sel:
         c = df[df["Nombre_Local"] == cliente_sel].iloc[0]
-        instrucciones_extra, es_baja, tiene_facturas, es_grupo = construir_prompt(c)
+        instrucciones_extra, es_baja, tiene_facturas, es_grupo, nombre_vacio = construir_prompt(c)
+
+        nombre_cliente = str(c.get('Dueño', '')).strip()
+        if normalizar(nombre_cliente) in ['', 'nan']:
+            nombre_mostrar = "Grupo / Sin nombre"
+        else:
+            nombre_mostrar = nombre_cliente
 
         col1, col2 = st.columns([1, 2])
 
         with col1:
             st.subheader("Ficha del Cliente")
-            st.info("Dueno: " + str(c['Dueño']))
+            st.info("Nombre del cliente: " + nombre_mostrar)
             st.write("Estatus: " + str(c.get('Estatus', 'N/A')))
             st.write("Fase: " + str(c.get('Fase_Protocolo', 'N/A')))
             st.write("Tipo: " + str(c.get('Tipo_Cliente', 'N/A')))
 
-            if es_grupo:
+            if es_grupo or nombre_vacio:
                 st.info("Cliente GRUPO - tono de equipo activado")
             else:
                 st.info("Cliente INDIVIDUAL - tono personal activado")
@@ -268,11 +299,34 @@ if df is not None:
             with tab1:
                 st.subheader("Asistente")
                 tema = st.text_area("Que necesitas?", key="tema_libre")
+
+                # Detectar si el tema es una solicitud de factura
+                solicitud_factura = False
+                if tema:
+                    palabras_factura = ["factura", "facturas", "recibo", "recibos", "cobro", "pago"]
+                    for palabra in palabras_factura:
+                        if palabra in normalizar(tema):
+                            solicitud_factura = True
+                            break
+
+                if solicitud_factura:
+                    st.info("El cliente solicita una factura. Se incluira la respuesta del departamento de facturacion.")
+
                 if st.button("Generar Mensaje", key="btn_libre"):
                     if tema:
                         with st.spinner("Generando mensaje..."):
                             try:
-                                system_prompt = prompt_maestro + "\n\n" + instrucciones_extra
+                                instruccion_factura = ""
+                                if solicitud_factura:
+                                    instruccion_factura = (
+                                        "\nINSTRUCCION ESPECIAL - SOLICITUD DE FACTURA:\n"
+                                        "El cliente esta solicitando una factura o informacion sobre facturacion.\n"
+                                        "Responde de forma amable indicando que trasladamos su solicitud al departamento de facturacion\n"
+                                        "y que recibirá la factura en su correo electronico en breve.\n"
+                                        "Tono tranquilizador y eficiente. No prometas plazos concretos.\n"
+                                    )
+
+                                system_prompt = prompt_maestro + "\n\n" + instrucciones_extra + instruccion_factura
                                 user_prompt = "Cliente: " + str(c.to_dict()) + "\n\nTarea: " + tema
                                 respuesta = client.chat.completions.create(
                                     model="llama-3.3-70b-versatile",
@@ -282,12 +336,17 @@ if df is not None:
                                     ],
                                     max_tokens=1024
                                 )
-                                st.success("Sugerencia:")
-                                st.markdown(respuesta.choices[0].message.content)
+                                mensaje_generado = respuesta.choices[0].message.content
+                                st.session_state["mensaje_libre"] = mensaje_generado
                             except Exception as e:
                                 st.error("Error IA: " + str(e))
                     else:
                         st.warning("Escribe que necesitas antes de generar.")
+
+                if "mensaje_libre" in st.session_state and st.session_state["mensaje_libre"]:
+                    st.success("Sugerencia:")
+                    st.markdown(st.session_state["mensaje_libre"])
+                    boton_copiar(st.session_state["mensaje_libre"], "libre")
 
             with tab2:
                 st.subheader("Mensajes Recurrentes")
@@ -311,7 +370,7 @@ if df is not None:
                         if mensaje_sel:
                             with st.spinner("Generando mensaje recurrente..."):
                                 try:
-                                    instruccion_especifica = instruccion_mensaje_recurrente(mensaje_sel, es_grupo)
+                                    instruccion_especifica = instruccion_mensaje_recurrente(mensaje_sel, es_grupo or nombre_vacio)
                                     system_prompt = prompt_maestro + "\n\n" + instrucciones_extra
                                     user_prompt = (
                                         "Cliente: " + str(c.to_dict()) +
@@ -327,12 +386,17 @@ if df is not None:
                                         ],
                                         max_tokens=512
                                     )
-                                    st.success("Mensaje generado:")
-                                    st.markdown(respuesta.choices[0].message.content)
+                                    mensaje_recurrente = respuesta.choices[0].message.content
+                                    st.session_state["mensaje_recurrente"] = mensaje_recurrente
                                 except Exception as e:
                                     st.error("Error IA: " + str(e))
                         else:
                             st.warning("Selecciona un tipo de mensaje antes de generar.")
+
+                    if "mensaje_recurrente" in st.session_state and st.session_state["mensaje_recurrente"]:
+                        st.success("Mensaje generado:")
+                        st.markdown(st.session_state["mensaje_recurrente"])
+                        boton_copiar(st.session_state["mensaje_recurrente"], "recurrente")
                 else:
                     st.info("No se encontraron mensajes recurrentes en el Excel.")
 
