@@ -30,41 +30,39 @@ def cargar_datos():
 
 df, prompt_maestro = cargar_datos()
 
-# 4. FUNCIÓN PARA CONSTRUIR CONTEXTO ESPECIAL
-def construir_contexto(cliente, tema):
-    estatus = str(cliente.get('Estatus', '')).strip().lower()
+# 4. FUNCIÓN PARA CONSTRUIR PROMPT
+def construir_prompt(cliente, tema):
+    tipo = str(cliente.get('Tipo_Cliente', '')).strip().lower()
     facturas = str(cliente.get('Facturas_Pendientes', '')).strip().lower()
-    
-    contexto_extra = ""
 
-    if estatus == "baja":
-        contexto_extra += """
-        
-⚠️ INSTRUCCIÓN ESPECIAL - CLIENTE DE BAJA:
-Este cliente está dado de BAJA. Al final del mensaje DEBES incluir una coletilla natural 
-para intentar reactivarlo. Usa el módulo de Recuperación de Bajas del prompt: recuérdale 
-que su competencia está ganando terreno, que la Tarjeta Digital y el QR son herramientas 
-que ahora mismo no está aprovechando, y pregunta si quiere reactivar el servicio.
+    es_baja = tipo == "baja"
+    tiene_facturas = facturas == "si" or facturas == "sí"
+
+    instrucciones_extra = ""
+
+    if es_baja and tiene_facturas:
+        instrucciones_extra = """
+INSTRUCCIÓN OBLIGATORIA: Este cliente está de BAJA y tiene FACTURAS PENDIENTES.
+El mensaje debe incluir DOS coletillas al final:
+1. Primero recuérdale amablemente que tiene facturas pendientes de pago y que es importante regularizarlo.
+2. Después invítale a reactivar el servicio recordándole que su competencia está ganando terreno y que tiene herramientas como la Tarjeta Digital y el QR sin aprovechar.
+"""
+    elif es_baja:
+        instrucciones_extra = """
+INSTRUCCIÓN OBLIGATORIA: Este cliente está de BAJA.
+Al final del mensaje DEBES añadir una coletilla para intentar que reactive el servicio.
+Recuérdale que su competencia está ganando terreno, que la Tarjeta Digital y el QR 
+son armas que ahora mismo no está aprovechando, y pregúntale si quiere reactivar.
+"""
+    elif tiene_facturas:
+        instrucciones_extra = """
+INSTRUCCIÓN OBLIGATORIA: Este cliente tiene FACTURAS PENDIENTES.
+Al final del mensaje DEBES añadir una coletilla delicada para recordarle el pago.
+Dile que hay un pequeño desajuste administrativo con los últimos recibos y que 
+es clave regularizarlo para no pausar el ritmo técnico ni perder el posicionamiento ganado.
 """
 
-    if facturas == "sí":
-        contexto_extra += """
-        
-⚠️ INSTRUCCIÓN ESPECIAL - FACTURAS PENDIENTES:
-Este cliente tiene facturas pendientes de pago. Al final del mensaje DEBES incluir una 
-coletilla delicada para recordárselo. Usa el módulo de Cobro Delicado del prompt: 
-menciona que hay un pequeño desajuste administrativo con los últimos recibos y que es 
-clave regularizarlo para no pausar el ritmo técnico ni perder el posicionamiento ganado.
-"""
-
-    if estatus == "baja" and facturas == "sí":
-        contexto_extra += """
-        
-⚠️ NOTA ADICIONAL: El cliente está de baja Y tiene facturas pendientes. 
-Prioriza primero el cobro de facturas y luego la reactivación del servicio.
-"""
-
-    return f"{prompt_maestro}{contexto_extra}\n\nCliente: {cliente.to_dict()}\n\nTarea: {tema}"
+    return instrucciones_extra, es_baja, tiene_facturas
 
 
 # 5. INTERFAZ
@@ -83,6 +81,8 @@ if df is not None:
         c = df[df["Nombre_Local"] == cliente_sel].iloc[0]
         col1, col2 = st.columns([1, 2])
 
+        instrucciones_extra, es_baja, tiene_facturas = construir_prompt(c, "")
+
         with col1:
             st.subheader("📋 Ficha del Cliente")
             st.info(f"**Dueño:** {c['Dueño']}")
@@ -90,12 +90,9 @@ if df is not None:
             st.write(f"**Fase:** {c.get('Fase_Protocolo', 'N/A')}")
             st.write(f"**Tipo:** {c.get('Tipo_Cliente', 'N/A')}")
 
-            estatus = str(c.get('Estatus', '')).strip().lower()
-            facturas = str(c.get('Facturas_Pendientes', '')).strip().lower()
-
-            if estatus == "baja":
+            if es_baja:
                 st.error("🔴 Cliente de BAJA — se añadirá coletilla de reactivación")
-            if facturas == "sí":
+            if tiene_facturas:
                 st.warning("⚠️ Facturas Pendientes — se añadirá coletilla de cobro")
             if pd.notna(c.get('Notas_Criticas')) and str(c.get('Notas_Criticas')) != 'nan':
                 st.error(f"📌 Nota: {c['Notas_Criticas']}")
@@ -107,12 +104,14 @@ if df is not None:
                 if tema:
                     with st.spinner("Generando mensaje..."):
                         try:
-                            prompt_final = construir_contexto(c, tema)
+                            system_prompt = f"{prompt_maestro}\n\n{instrucciones_extra}"
+                            user_prompt = f"Cliente: {c.to_dict()}\n\nTarea: {tema}"
+
                             respuesta = client.chat.completions.create(
                                 model="llama-3.3-70b-versatile",
                                 messages=[
-                                    {"role": "system", "content": prompt_final},
-                                    {"role": "user", "content": tema}
+                                    {"role": "system", "content": system_prompt},
+                                    {"role": "user", "content": user_prompt}
                                 ],
                                 max_tokens=1024
                             )
