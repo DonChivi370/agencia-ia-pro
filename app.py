@@ -31,38 +31,67 @@ def cargar_datos():
 df, prompt_maestro = cargar_datos()
 
 # 4. FUNCIÓN PARA CONSTRUIR PROMPT
-def construir_prompt(cliente, tema):
+def construir_prompt(cliente):
     tipo = str(cliente.get('Tipo_Cliente', '')).strip().lower()
     facturas = str(cliente.get('Facturas_Pendientes', '')).strip().lower()
+    estatus = str(cliente.get('Estatus', '')).strip().lower()
 
     es_baja = tipo == "baja"
-    tiene_facturas = facturas == "si" or facturas == "sí"
+    tiene_facturas = facturas in ["si", "sí"]
+    es_grupo = estatus == "grupo"
 
-    instrucciones_extra = ""
+    instrucciones = []
 
+    # Trato individual vs grupo
+    if es_grupo:
+        instrucciones.append("""
+INSTRUCCIÓN DE TONO - CLIENTE GRUPO:
+Estás hablando con un EQUIPO, no con una persona individual.
+- Usa siempre lenguaje en plural: "vosotros", "el equipo", "juntos"
+- Saluda como: "¡Hola equipo!", "¡Hola familia!", "¡Hola chicos!"
+- Cierra siempre con frases de equipo: "¡Vamos equipo!", "¡Juntos a por más!", "¡Seguimos creciendo juntos!"
+- Transmite energía colectiva y sentido de comunidad en todo el mensaje
+""")
+    else:
+        instrucciones.append("""
+INSTRUCCIÓN DE TONO - CLIENTE INDIVIDUAL:
+Estás hablando con UNA persona individual.
+- Usa siempre lenguaje en singular: "tú", "tu negocio"
+- Saluda de forma personal: "¡Hola [nombre]!"
+- Cierra con frases individuales: "¡Tú puedes!", "¡Seguimos optimizando!", "¡Vamos a por más!"
+- Transmite cercanía personal y confianza uno a uno
+""")
+
+    # Baja y facturas
     if es_baja and tiene_facturas:
-        instrucciones_extra = """
-INSTRUCCIÓN OBLIGATORIA: Este cliente está de BAJA y tiene FACTURAS PENDIENTES.
-El mensaje debe incluir DOS coletillas al final:
-1. Primero recuérdale amablemente que tiene facturas pendientes de pago y que es importante regularizarlo.
-2. Después invítale a reactivar el servicio recordándole que su competencia está ganando terreno y que tiene herramientas como la Tarjeta Digital y el QR sin aprovechar.
-"""
+        instrucciones.append(f"""
+INSTRUCCIÓN OBLIGATORIA - BAJA + FACTURAS PENDIENTES:
+{"El equipo está" if es_grupo else "Este cliente está"} de BAJA y tiene FACTURAS PENDIENTES.
+Añade DOS coletillas al final del mensaje:
+1. Recuérda{"les" if es_grupo else "le"} amablemente las facturas pendientes y la importancia de regularizarlas.
+2. Invita{"les" if es_grupo else "le"} a reactivar el servicio recordando que la competencia está ganando terreno
+   y que tienen herramientas como la Tarjeta Digital y el QR sin aprovechar.
+""")
     elif es_baja:
-        instrucciones_extra = """
-INSTRUCCIÓN OBLIGATORIA: Este cliente está de BAJA.
-Al final del mensaje DEBES añadir una coletilla para intentar que reactive el servicio.
-Recuérdale que su competencia está ganando terreno, que la Tarjeta Digital y el QR 
-son armas que ahora mismo no está aprovechando, y pregúntale si quiere reactivar.
-"""
+        instrucciones.append(f"""
+INSTRUCCIÓN OBLIGATORIA - CLIENTE DE BAJA:
+{"El equipo está" if es_grupo else "Este cliente está"} de BAJA.
+Al final del mensaje añade una coletilla para {"que reactiven" if es_grupo else "que reactive"} el servicio:
+- Recuérda{"les" if es_grupo else "le"} que la competencia está ganando terreno
+- Menciona que la Tarjeta Digital y el QR son armas que ahora no {"están" if es_grupo else "está"} aprovechando
+- Pregunta si {"quieren" if es_grupo else "quiere"} reactivar con energía de equipo
+""")
     elif tiene_facturas:
-        instrucciones_extra = """
-INSTRUCCIÓN OBLIGATORIA: Este cliente tiene FACTURAS PENDIENTES.
-Al final del mensaje DEBES añadir una coletilla delicada para recordarle el pago.
-Dile que hay un pequeño desajuste administrativo con los últimos recibos y que 
-es clave regularizarlo para no pausar el ritmo técnico ni perder el posicionamiento ganado.
-"""
+        instrucciones.append(f"""
+INSTRUCCIÓN OBLIGATORIA - FACTURAS PENDIENTES:
+{"El equipo tiene" if es_grupo else "Este cliente tiene"} FACTURAS PENDIENTES.
+Al final del mensaje añade una coletilla delicada de cobro:
+- Menciona que hay un pequeño desajuste administrativo con los últimos recibos
+- Indica que es clave regularizarlo para no pausar el ritmo técnico
+- Que no {"pierdan" if es_grupo else "pierda"} el posicionamiento ganado hasta ahora
+""")
 
-    return instrucciones_extra, es_baja, tiene_facturas
+    return "\n".join(instrucciones), es_baja, tiene_facturas, es_grupo
 
 
 # 5. INTERFAZ
@@ -79,9 +108,9 @@ if df is not None:
 
     if cliente_sel:
         c = df[df["Nombre_Local"] == cliente_sel].iloc[0]
-        col1, col2 = st.columns([1, 2])
+        instrucciones_extra, es_baja, tiene_facturas, es_grupo = construir_prompt(c)
 
-        instrucciones_extra, es_baja, tiene_facturas = construir_prompt(c, "")
+        col1, col2 = st.columns([1, 2])
 
         with col1:
             st.subheader("📋 Ficha del Cliente")
@@ -90,6 +119,10 @@ if df is not None:
             st.write(f"**Fase:** {c.get('Fase_Protocolo', 'N/A')}")
             st.write(f"**Tipo:** {c.get('Tipo_Cliente', 'N/A')}")
 
+            if es_grupo:
+                st.info("👥 Cliente GRUPO — tono de equipo activado")
+            else:
+                st.info("👤 Cliente INDIVIDUAL — tono personal activado")
             if es_baja:
                 st.error("🔴 Cliente de BAJA — se añadirá coletilla de reactivación")
             if tiene_facturas:
